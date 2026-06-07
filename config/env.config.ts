@@ -61,4 +61,15 @@ export const envConfig = {
         perUserMax: parsePositiveInt(get("RATE_LIMIT_PER_USER_MAX"), 5),
         perUserWindowMs: parsePositiveInt(get("RATE_LIMIT_PER_USER_WINDOW_MS"), 3_600_000),
     },
+    cron: {
+        enabled: (get("CRON_ENABLED") ?? "true").toLowerCase() !== "false",
+        timezone: get("CRON_TIMEZONE") ?? "UTC",
+        retryAttempts: parsePositiveInt(get("CRON_RETRY_ATTEMPTS"), 3),
+        retryDelayMs: parsePositiveInt(get("CRON_RETRY_DELAY_MS"), 1_000),
+        schedules: {
+            dailyDigest: get("CRON_DAILY_DIGEST") ?? "0 8 * * *",
+            deadlineReminder: get("CRON_DEADLINE_REMINDER") ?? "0 */2 * * *",
+            taskCleanup: get("CRON_TASK_CLEANUP") ?? "0 0 * * *",
+        },
+    },
 } as const;
