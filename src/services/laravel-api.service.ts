@@ -2,6 +2,11 @@ import axios, { type AxiosInstance, isAxiosError } from "axios";
 import { envConfig } from "../../config/env.config.js";
 import type { ApiResponse } from "../types/api.d.js";
 import type { NotificationDetails } from "../types/notification.d.js";
+import type {
+    DailyDigestData,
+    DeadlineReminderData,
+    StaleCancelledTasksData,
+} from "../types/scheduler.d.js";
 import type { PaginatedTasks, Task } from "../types/task.d.js";
 import type { Team } from "../types/team.d.js";
 import { AppError } from "../utils/app-error.util.js";
@@ -16,7 +21,8 @@ const client = axios.create({
     },
 });
 
-const BASE_ENDPOINT = "/internal/notifications";
+const NOTIFICATIONS_ENDPOINT = "/internal/notifications";
+const SCHEDULER_ENDPOINT = "/internal/scheduler";
 
 const createUserClient = (accessToken: string): AxiosInstance =>
     axios.create({
@@ -49,7 +55,7 @@ const handleApiError = (error: unknown, context: Record<string, unknown>, fallba
 export const laravelApiService = {
     getNotificationDetails: async (taskId: number, userId: number): Promise<NotificationDetails> => {
         try {
-            const response = await client.get<ApiResponse<NotificationDetails>>(`${BASE_ENDPOINT}/${taskId}/${userId}`);
+            const response = await client.get<ApiResponse<NotificationDetails>>(`${NOTIFICATIONS_ENDPOINT}/${taskId}/${userId}`);
             return response.data.data;
         } catch (error) {
             return handleApiError(error, { taskId, userId }, "Failed to fetch notification details from Laravel API.");
@@ -87,6 +93,45 @@ export const laravelApiService = {
             return tasks;
         } catch (error) {
             return handleApiError(error, { teamId }, "Failed to fetch team tasks from Laravel API.");
+        }
+    },
+
+    getDailyDigest: async (): Promise<DailyDigestData> => {
+        try {
+            const response = await client.get<ApiResponse<DailyDigestData>>(`${SCHEDULER_ENDPOINT}/daily-digest`);
+            return response.data.data;
+        } catch (error) {
+            return handleApiError(error, {}, "Failed to fetch daily digest data from Laravel API.");
+        }
+    },
+
+    getDeadlineReminders: async (): Promise<DeadlineReminderData> => {
+        try {
+            const response = await client.get<ApiResponse<DeadlineReminderData>>(
+                `${SCHEDULER_ENDPOINT}/deadline-reminders`,
+            );
+            return response.data.data;
+        } catch (error) {
+            return handleApiError(error, {}, "Failed to fetch deadline reminder data from Laravel API.");
+        }
+    },
+
+    getStaleCancelledTasks: async (): Promise<StaleCancelledTasksData> => {
+        try {
+            const response = await client.get<ApiResponse<StaleCancelledTasksData>>(
+                `${SCHEDULER_ENDPOINT}/stale-cancelled-tasks`,
+            );
+            return response.data.data;
+        } catch (error) {
+            return handleApiError(error, {}, "Failed to fetch stale cancelled tasks from Laravel API.");
+        }
+    },
+
+    archiveTask: async (taskId: number): Promise<void> => {
+        try {
+            await client.delete(`/tasks/${taskId}/archive`);
+        } catch (error) {
+            return handleApiError(error, { taskId }, "Failed to archive task via Laravel API.");
         }
     },
 };
