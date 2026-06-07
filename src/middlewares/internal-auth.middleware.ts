@@ -6,7 +6,7 @@ export const internalAuthMiddleware = (
     req: Request,
     _res: Response,
     next: NextFunction,
-): void => {
+) => {
     const serviceKey = req.header("X-Service-Key");
 
     if (!serviceKey || serviceKey !== envConfig.internalServiceKey) {

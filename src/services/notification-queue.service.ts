@@ -5,17 +5,17 @@ import { logger } from "../utils/logger.util.js";
 const queue: NotificationJobPayload[] = [];
 let isProcessing = false;
 
-const logQueueError = (error: unknown): void => {
+const logQueueError = (error: unknown) => {
     logger.error("notification_queue_processing_failed", {
         error: error instanceof Error ? error.message : "Unknown error",
     });
 };
 
-const scheduleProcessNext = (): void => {
+const scheduleProcessNext = () => {
     setImmediate(() => processNext().catch(logQueueError));
 };
 
-const processNext = async (): Promise<void> => {
+const processNext = async () => {
     if (isProcessing) return;
 
     const job = queue.shift();
@@ -43,7 +43,7 @@ const processNext = async (): Promise<void> => {
 };
 
 export const notificationQueueService = {
-    enqueue(payload: Omit<NotificationJobPayload, "queued_at">): void {
+    enqueue: (payload: Omit<NotificationJobPayload, "queued_at">) => {
         queue.push({
             ...payload,
             queued_at: new Date().toISOString(),

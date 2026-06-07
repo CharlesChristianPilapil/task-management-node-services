@@ -1,6 +1,9 @@
-import axios, { isAxiosError } from "axios";
+import axios, { type AxiosInstance, isAxiosError } from "axios";
 import { envConfig } from "../../config/env.config.js";
+import type { ApiResponse } from "../types/api.d.js";
 import type { NotificationDetails } from "../types/notification.d.js";
+import type { PaginatedTasks, Task } from "../types/task.d.js";
+import type { Team } from "../types/team.d.js";
 import { AppError } from "../utils/app-error.util.js";
 import { logger } from "../utils/logger.util.js";
 
@@ -15,35 +18,75 @@ const client = axios.create({
 
 const BASE_ENDPOINT = "/internal/notifications";
 
-type LaravelApiResponse<T> = {
-    status: string;
-    message: string;
-    data: T;
+const createUserClient = (accessToken: string): AxiosInstance =>
+    axios.create({
+        baseURL: envConfig.laravelApiUrl,
+        timeout: 10_000,
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: "application/json",
+        },
+    });
+
+const handleApiError = (error: unknown, context: Record<string, unknown>, fallbackMessage: string): never => {
+    if (isAxiosError(error)) {
+        const status = error.response?.status ?? 502;
+        const message =
+            (error.response?.data as { message?: string } | undefined)?.message ?? fallbackMessage;
+
+        logger.error("laravel_api_request_failed", {
+            ...context,
+            status,
+            message,
+        });
+
+        throw new AppError(message, status);
+    }
+
+    throw error;
 };
 
 export const laravelApiService = {
-    async getNotificationDetails(taskId: number, userId: number): Promise<NotificationDetails> {
+    getNotificationDetails: async (taskId: number, userId: number): Promise<NotificationDetails> => {
         try {
-            const response = await client.get<LaravelApiResponse<NotificationDetails>>(`${BASE_ENDPOINT}/${taskId}/${userId}`);
+            const response = await client.get<ApiResponse<NotificationDetails>>(`${BASE_ENDPOINT}/${taskId}/${userId}`);
             return response.data.data;
         } catch (error) {
-            if (isAxiosError(error)) {
-                const status = error.response?.status ?? 502;
-                const message =
-                    (error.response?.data as { message?: string } | undefined)?.message ??
-                    "Failed to fetch notification details from Laravel API.";
+            return handleApiError(error, { taskId, userId }, "Failed to fetch notification details from Laravel API.");
+        }
+    },
 
-                logger.error("laravel_api_request_failed", {
-                    taskId,
-                    userId,
-                    status,
-                    message,
-                });
+    getTeam: async (teamId: number, accessToken: string): Promise<Team> => {
+        try {
+            const response = await createUserClient(accessToken).get<ApiResponse<Team>>(`/teams/${teamId}`);
+            return response.data.data;
+        } catch (error) {
+            return handleApiError(error, { teamId }, "Failed to fetch team from Laravel API.");
+        }
+    },
 
-                throw new AppError(message, status);
-            }
+    getAllTeamTasks: async (teamId: number, accessToken: string): Promise<Task[]> => {
+        const client = createUserClient(accessToken);
+        const tasks: Task[] = [];
+        let currentPage = 1;
+        let lastPage = 1;
 
-            throw error;
+        try {
+            do {
+                const response = await client.get<ApiResponse<PaginatedTasks>>(
+                    `/teams/${teamId}/tasks`,
+                    { params: { page: currentPage, per_page: 100 } },
+                );
+
+                const pageData = response.data.data;
+                tasks.push(...pageData.tasks);
+                currentPage = pageData.pagination.current_page + 1;
+                lastPage = pageData.pagination.last_page;
+            } while (currentPage <= lastPage);
+
+            return tasks;
+        } catch (error) {
+            return handleApiError(error, { teamId }, "Failed to fetch team tasks from Laravel API.");
         }
     },
 };

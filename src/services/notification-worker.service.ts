@@ -8,7 +8,7 @@ import { emailService } from "./email.service.js";
 import { laravelApiService } from "./laravel-api.service.js";
 
 export const notificationWorkerService = {
-    async processNotification(body: SendNotificationBody): Promise<NotificationLogEntry> {
+    processNotification: async (body: SendNotificationBody): Promise<NotificationLogEntry> => {
         const timestamp = new Date().toISOString();
 
         try {
@@ -53,7 +53,7 @@ export const notificationWorkerService = {
         }
     },
 
-    isValidEventType(value: string): value is NotificationEventType {
+    isValidEventType: (value: string): value is NotificationEventType => {
         return value === "assigned" || value === "status_changed";
     },
 };

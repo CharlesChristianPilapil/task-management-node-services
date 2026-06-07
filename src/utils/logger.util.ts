@@ -2,7 +2,7 @@ import type { NotificationLogEntry } from "../types/notification.d.js";
 
 type LogLevel = "info" | "warn" | "error";
 
-const write = (level: LogLevel, message: string, meta?: Record<string, unknown>): void => {
+const write = (level: LogLevel, message: string, meta?: Record<string, unknown>) => {
     const entry = {
         level,
         message,

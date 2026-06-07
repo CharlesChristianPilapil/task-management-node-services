@@ -51,7 +51,6 @@ export const envConfig = {
     jwtSecret: requireEnv("JWT_SECRET"),
     internalServiceKey: requireEnv("INTERNAL_SERVICE_KEY"),
     corsOrigins: parseOrigins(get("CORS_ORIGINS") ?? "*"),
-    databaseUrl: get("DATABASE_URL"),
     mail: {
         user: requireEnv("EMAIL_USER"),
         pass: requireEnv("EMAIL_PASS"),

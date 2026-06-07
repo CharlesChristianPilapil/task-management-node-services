@@ -29,7 +29,7 @@ const isUserRateLimited = (userId: number): boolean => {
 };
 
 export const notificationService = {
-    queueNotification(body: SendNotificationBody): { queued: boolean; reason?: string } {
+    queueNotification: (body: SendNotificationBody): { queued: boolean; reason?: string } => {
         if (isUserRateLimited(body.user_id)) {
             logger.warn("notification_rate_limited", {
                 userId: body.user_id,

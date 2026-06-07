@@ -1,3 +1,6 @@
+import type { Task } from "./task.d.js";
+import type { User } from "./user.d.js";
+
 export type NotificationEventType = "assigned" | "status_changed";
 
 export type SendNotificationBody = {
@@ -11,34 +14,9 @@ export type NotificationJobPayload = SendNotificationBody & {
     queued_at: string;
 };
 
-export type LaravelUser = {
-    id: number;
-    name: string;
-    email: string;
-    role: string;
-    role_label: string;
-    is_active: boolean;
-};
-
-export type LaravelTask = {
-    id: number;
-    title: string;
-    description: string | null;
-    status: string;
-    status_label: string;
-    priority: string;
-    priority_label: string;
-    due_date: string | null;
-    team_id: number;
-    assigned_to: number | null;
-    created_by: number;
-    assignee?: LaravelUser;
-    creator?: LaravelUser;
-};
-
 export type NotificationDetails = {
-    task: LaravelTask;
-    user: LaravelUser;
+    task: Task;
+    user: User;
 };
 
 export type NotificationLogEntry = {
