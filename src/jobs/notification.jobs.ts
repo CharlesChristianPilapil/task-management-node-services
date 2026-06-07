@@ -3,7 +3,7 @@ import { notificationWorkerService } from "../services/notification-worker.servi
 
 export const processNotificationJob = async (
     payload: NotificationJobPayload,
-): Promise<void> => {
+) => {
     await notificationWorkerService.processNotification({
         task_id: payload.task_id,
         user_id: payload.user_id,

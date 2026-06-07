@@ -14,7 +14,7 @@ const parsePositiveInt = (value: unknown, field: string): number => {
 };
 
 export const notificationController = {
-    send: async (req: Request, res: Response): Promise<void> => {
+    send: async (req: Request, res: Response) => {
         const body = req.body as Partial<SendNotificationBody>;
 
         const taskId = parsePositiveInt(body.task_id, "task_id");

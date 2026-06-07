@@ -53,11 +53,11 @@ const buildHtml = (
 };
 
 export const emailService = {
-    async sendTaskNotification(
+    sendTaskNotification: async (
         eventType: NotificationEventType,
         details: NotificationDetails,
         extraDetails?: Record<string, unknown>,
-    ): Promise<"sent" | "skipped" | "failed"> {
+    ): Promise<"sent" | "skipped" | "failed"> => {
         const { task, user } = details;
 
         if (!user.is_active) {
