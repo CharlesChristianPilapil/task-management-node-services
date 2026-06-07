@@ -1,0 +1,25 @@
+import express from "express";
+import cors from "cors";
+import { envConfig } from "../config/env.config.js";
+import notificationRouter from "./routes/notification.route.js";
+import { errorHandlerMiddleware } from "./middlewares/error-handler.middleware.js";
+import { AppError } from "./utils/app-error.util.js";
+
+const app = express();
+
+app.use(
+    cors({
+        origin: envConfig.corsOrigins,
+    }),
+);
+app.use(express.json());
+
+app.use("/api/notifications", notificationRouter);
+
+app.use((_req, _res, next) => {
+    next(new AppError("Route not found.", 404));
+});
+
+app.use(errorHandlerMiddleware);
+
+export default app;
