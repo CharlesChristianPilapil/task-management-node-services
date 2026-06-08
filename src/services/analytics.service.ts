@@ -17,9 +17,7 @@ const PENDING_STATUSES = new Set(["pending", "in_progress"]);
 const UPCOMING_DEADLINE_DAYS = 7;
 const UPCOMING_DEADLINE_MS = UPCOMING_DEADLINE_DAYS * 24 * 60 * 60 * 1000;
 const MS_PER_HOUR = 3_600_000;
-const TASK_SUMMARY_CACHE_TTL_MS = 300_000;
-const TEAM_PRODUCTIVITY_CACHE_TTL_MS = 300_000;
-const UPCOMING_DEADLINES_CACHE_TTL_MS = 60_000;
+const ANALYTICS_CACHE_TTL_MS = cacheService.ttlMs;
 
 const buildCacheKey = (prefix: string, parts: Record<string, string | number | undefined>): string => {
     const normalized = Object.entries(parts)
@@ -288,7 +286,7 @@ export const analyticsService = {
         const tasks = await fetchFilteredTasks(teamId, accessToken, range);
         const summary = buildTaskSummary(tasks);
 
-        cacheService.set(cacheKey, summary, TASK_SUMMARY_CACHE_TTL_MS);
+        cacheService.set(cacheKey, summary, ANALYTICS_CACHE_TTL_MS);
         return summary;
     },
 
@@ -316,7 +314,7 @@ export const analyticsService = {
             members: buildTeamProductivity(tasks, memberNames),
         };
 
-        cacheService.set(cacheKey, report, TEAM_PRODUCTIVITY_CACHE_TTL_MS);
+        cacheService.set(cacheKey, report, ANALYTICS_CACHE_TTL_MS);
         return report;
     },
 
@@ -342,7 +340,7 @@ export const analyticsService = {
             members: buildUpcomingDeadlines(tasks, memberNames, new Date()),
         };
 
-        cacheService.set(cacheKey, report, UPCOMING_DEADLINES_CACHE_TTL_MS);
+        cacheService.set(cacheKey, report, ANALYTICS_CACHE_TTL_MS);
         return report;
     },
 };

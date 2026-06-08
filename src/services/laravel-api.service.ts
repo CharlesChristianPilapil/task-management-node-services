@@ -14,7 +14,7 @@ import { logger } from "../utils/logger.util.js";
 
 const client = axios.create({
     baseURL: envConfig.laravelApiUrl,
-    timeout: 10_000,
+    timeout: 30_000,
     headers: {
         "X-Service-Key": envConfig.internalServiceKey,
         Accept: "application/json",
@@ -27,7 +27,7 @@ const SCHEDULER_ENDPOINT = "/internal/scheduler";
 const createUserClient = (accessToken: string): AxiosInstance =>
     axios.create({
         baseURL: envConfig.laravelApiUrl,
-        timeout: 10_000,
+        timeout: 30_000,
         headers: {
             Authorization: `Bearer ${accessToken}`,
             Accept: "application/json",
