@@ -33,14 +33,30 @@ const CRON_JOBS: CronDefinition[] = [
 let activeTasks: ScheduledTask[] = [];
 let runningJobs = 0;
 let isShuttingDown = false;
+const runningJobNames = new Set<CronJobName>();
 
-const runJob = async (name: CronJobName, handler: () => Promise<void>): Promise<void> => {
+const getJob = (name: CronJobName): CronDefinition => {
+    const job = CRON_JOBS.find((entry) => entry.name === name);
+
+    if (!job) {
+        throw new Error(`Unknown cron job: ${name}`);
+    }
+
+    return job;
+};
+
+const runJob = async (
+    name: CronJobName,
+    handler: () => Promise<void>,
+    options: { rethrowOnError?: boolean } = {},
+): Promise<void> => {
     if (isShuttingDown) {
         logger.warn("cron_skipped_shutdown", { jobName: name });
         return;
     }
 
     runningJobs += 1;
+    runningJobNames.add(name);
     const startedAt = Date.now();
 
     logger.info("cron_started", { jobName: name });
@@ -58,16 +74,43 @@ const runJob = async (name: CronJobName, handler: () => Promise<void>): Promise<
             error: error instanceof Error ? error.message : "Unknown error",
             stack: error instanceof Error ? error.stack : undefined,
         });
+
+        if (options.rethrowOnError) {
+            throw error;
+        }
     } finally {
         runningJobs -= 1;
+        runningJobNames.delete(name);
     }
+};
+
+export const executeCronJob = async (name: CronJobName): Promise<void> => {
+    if (runningJobNames.has(name)) {
+        throw new Error(`Cron job already running: ${name}`);
+    }
+
+    const job = getJob(name);
+    await runJob(name, job.handler, { rethrowOnError: true });
 };
 
 export const startScheduler = (): void => {
     if (!envConfig.cron.enabled) {
-        logger.info("cron_disabled", { reason: "CRON_ENABLED is false" });
+        logger.info("cron_disabled", {
+            reason: "CRON_ENABLED is false",
+            mode: "external",
+            endpoints: CRON_JOBS.map((job) => ({
+                name: job.name,
+                schedule: job.schedule,
+                path: `/api/cron/${job.name.replace(/_/g, "-")}`,
+            })),
+        });
         return;
     }
+
+    logger.info("cron_mode", {
+        mode: "in_process",
+        hint: "Set CRON_ENABLED=false and use POST /api/cron/* for external schedulers.",
+    });
 
     activeTasks = CRON_JOBS.map((job) =>
         cron.schedule(

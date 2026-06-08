@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { envConfig } from "../config/env.config.js";
 import analyticsRouter from "./routes/analytics.route.js";
+import cronRouter from "./routes/cron.route.js";
 import exportRouter from "./routes/export.route.js";
 import notificationRouter from "./routes/notification.route.js";
 import { errorHandlerMiddleware } from "./middlewares/error-handler.middleware.js";
@@ -16,6 +17,11 @@ app.use(
 );
 app.use(express.json());
 
+app.get("/health", (_req, res) => {
+    res.status(200).json({ status: "ok" });
+});
+
+app.use("/api/cron", cronRouter);
 app.use("/api/notifications", notificationRouter);
 app.use("/api/analytics", analyticsRouter);
 app.use("/api/export", exportRouter);
