@@ -9,6 +9,7 @@ import type {
 } from "../types/analytics.d.js";
 import type { Task } from "../types/task.d.js";
 import { AppError } from "../utils/app-error.util.js";
+import { ANALYTICS_TEAM_ACCESS_DENIED_MESSAGE, assertTeamAccess } from "../utils/team-access.util.js";
 import { cacheService } from "./cache.service.js";
 import { laravelApiService } from "./laravel-api.service.js";
 
@@ -207,31 +208,6 @@ const buildUpcomingDeadlines = (
     return members.sort((left, right) => left.name.localeCompare(right.name));
 };
 
-const fetchMemberNames = async (teamId: number, accessToken: string): Promise<Map<number, string>> => {
-    const team = await laravelApiService.getTeam(teamId, accessToken);
-    const memberNames = new Map<number, string>();
-
-    for (const member of team.members ?? []) {
-        memberNames.set(member.id, member.name);
-    }
-
-    return memberNames;
-};
-
-const assertTeamAccess = async (
-    user: AuthenticatedUser,
-    teamId: number,
-    accessToken: string,
-): Promise<Map<number, string>> => {
-    const memberNames = await fetchMemberNames(teamId, accessToken);
-
-    if (user.role !== "admin" && !memberNames.has(user.id)) {
-        throw new AppError("You can only view analytics for your own team.", 403);
-    }
-
-    return memberNames;
-};
-
 const fetchFilteredTasks = async (
     teamId: number,
     accessToken: string,
@@ -282,7 +258,7 @@ export const analyticsService = {
 
         if (cached) return cached;
 
-        await assertTeamAccess(user, teamId, accessToken);
+        await assertTeamAccess(user, teamId, accessToken, ANALYTICS_TEAM_ACCESS_DENIED_MESSAGE);
         const tasks = await fetchFilteredTasks(teamId, accessToken, range);
         const summary = buildTaskSummary(tasks);
 
@@ -307,7 +283,12 @@ export const analyticsService = {
 
         if (cached) return cached;
 
-        const memberNames = await assertTeamAccess(user, teamId, accessToken);
+        const memberNames = await assertTeamAccess(
+            user,
+            teamId,
+            accessToken,
+            ANALYTICS_TEAM_ACCESS_DENIED_MESSAGE,
+        );
         const tasks = await fetchFilteredTasks(teamId, accessToken, range);
         const report: TeamProductivityReport = {
             team_id: teamId,
@@ -332,7 +313,12 @@ export const analyticsService = {
 
         if (cached) return cached;
 
-        const memberNames = await assertTeamAccess(user, teamId, accessToken);
+        const memberNames = await assertTeamAccess(
+            user,
+            teamId,
+            accessToken,
+            ANALYTICS_TEAM_ACCESS_DENIED_MESSAGE,
+        );
         const tasks = await laravelApiService.getAllTeamTasks(teamId, accessToken);
         const report: UpcomingDeadlinesReport = {
             team_id: teamId,

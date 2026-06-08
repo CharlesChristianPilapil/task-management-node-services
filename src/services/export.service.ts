@@ -13,6 +13,7 @@ import type {
 import type { Task } from "../types/task.d.js";
 import { AppError } from "../utils/app-error.util.js";
 import { logger } from "../utils/logger.util.js";
+import { EXPORT_TEAM_ACCESS_DENIED_MESSAGE, assertTeamAccess } from "../utils/team-access.util.js";
 import {
     throwValidationError,
     validationMessages,
@@ -88,25 +89,6 @@ const resolveMemberName = (userId: number | null, memberNames: Map<number, strin
     }
 
     return memberNames.get(userId) ?? `User #${userId}`;
-};
-
-const assertTeamAccess = async (
-    user: AuthenticatedUser,
-    teamId: number,
-    accessToken: string,
-): Promise<Map<number, string>> => {
-    const team = await laravelApiService.getTeam(teamId, accessToken);
-    const memberNames = new Map<number, string>();
-
-    for (const member of team.members ?? []) {
-        memberNames.set(member.id, member.name);
-    }
-
-    if (user.role !== "admin" && !memberNames.has(user.id)) {
-        throw new AppError("You can only export tasks for your own team.", 403);
-    }
-
-    return memberNames;
 };
 
 const matchesFilters = (task: Task, filters: ExportFilters): boolean => {
@@ -304,7 +286,12 @@ export const exportService = {
         const { team_id: teamId, format, filters = {} } = request;
 
         try {
-            const memberNames = await assertTeamAccess(user, teamId, accessToken);
+            const memberNames = await assertTeamAccess(
+                user,
+                teamId,
+                accessToken,
+                EXPORT_TEAM_ACCESS_DENIED_MESSAGE,
+            );
             const allTasks = await laravelApiService.getAllTeamTasks(teamId, accessToken);
             const rows = allTasks.filter((task) => matchesFilters(task, filters)).map((task) => toExportRow(task, memberNames));
 
